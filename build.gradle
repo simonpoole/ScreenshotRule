@@ -69,11 +69,6 @@ android {
     }
 }
 
-ext {
-    androidxVersion = "1.0.0"
-    adb = android.getAdbExe().toString()
-}
-
 dependencies {
     implementation "com.squareup.spoon:spoon-client:2.0.0-SNAPSHOT"
     implementation 'androidx.test:rules:1.1.1'
@@ -129,7 +124,7 @@ group "ch.poole.android"
 
 task replaceVersion {
     doLast {
-        ant.replaceregexp(match:'ch\\.poole\\.android\\.screenshotrule\\:ScreenshotRule\\:([0-9\\.]+)', replace:"ch.poole.android.screenshotrule:ScreenshotRule:${version}", flags:'g', byline:true) {
+        ant.replaceregexp(match:'ch\\.poole\\.android\\:ScreenshotRule\\:([0-9\\.]+)', replace:"ch.poole.android:ScreenshotRule:${version}", flags:'g', byline:true) {
             fileset(dir: '..', includes: 'README.md')
         }
     }
@@ -138,7 +133,7 @@ build.dependsOn replaceVersion
 
 publishing {
     publications {
-        openinghoursfragment(MavenPublication) {
+        screenshotrule(MavenPublication) {
             groupId 'ch.poole.android'
             artifactId 'ScreenshotRule'
             artifact sourcesJar 
@@ -165,12 +160,12 @@ publishing {
 bintray {
     user = System.getenv('BINTRAY_USER')
     key = System.getenv('BINTRAY_KEY')
-    publications = ['openinghoursfragment']
+    publications = ['screenshotrule']
     pkg {
-        repo = 'osm'
+        repo = 'android'
         name = "${libName}"
-        licenses = ['BSD 3-Clause']
-        vcsUrl = 'https://github.com/simonpoole/OpeningHoursFragment.git'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/simonpoole/ScreenshotRule.git'
         version {
         	name = "${project.version}"
 			released  = new Date()
