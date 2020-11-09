@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
+import androidx.annotation.NonNull;
 
 public class ScreenshotRule implements TestRule {
     private static final String  EXTENSION      = ".png";
@@ -46,7 +47,14 @@ public class ScreenshotRule implements TestRule {
         return base; // Pass-through. We're just here to capture the description information.
     }
 
-    public File screenshot(Activity activity, String tag) {
+    /**
+     * Take a "screenshot"
+     * 
+     * @param activity the current Activity
+     * @param tag an identifying tag
+     * @return a File
+     */
+    public File screenshot(@NonNull Activity activity, @NonNull String tag) {
         if (!TAG_VALIDATION.matcher(tag).matches()) {
             throw new IllegalArgumentException("Tag must match " + TAG_VALIDATION.pattern() + ".");
         }
@@ -95,7 +103,14 @@ public class ScreenshotRule implements TestRule {
         return dirMethod;
     }
 
-    public File save(final Context context, final File file) {
+    /**
+     * Save a file to a location where it can be retrieved by spoon
+     * 
+     * @param context an Android Context
+     * @param file the File
+     * @return the File
+     */
+    public File save(@NonNull final Context context, @NonNull final File file) {
         if (!file.exists()) {
             throw new RuntimeException("Can't find any file at: " + file);
         }
