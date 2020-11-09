@@ -1,0 +1,183 @@
+// Project level build file starts here
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "https://maven.google.com" }
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.github.ksoichiro:gradle-eclipse-aar-plugin:0.3.1'
+    }
+}
+
+plugins {
+    id "com.jfrog.bintray" version "1.8.4"
+    id "org.sonarqube" version "2.7"
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
+apply plugin: "jacoco"
+
+
+allprojects {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "https://maven.google.com" }
+        mavenLocal()
+        google()
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' } // For Spoon snapshot, until 2.0.0 is released
+    }
+}
+
+
+version = '0.0.0'
+def libName = "ScreenshotRule"
+
+android {
+    compileSdkVersion 28
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 28
+        versionCode 100
+        versionName "${project.version}"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        setProperty("archivesBaseName", "${libName}")
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        debug {
+            testCoverageEnabled true
+        }
+    }
+
+    lintOptions {
+        // checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+}
+
+ext {
+    androidxVersion = "1.0.0"
+    adb = android.getAdbExe().toString()
+}
+
+dependencies {
+    implementation "com.squareup.spoon:spoon-client:2.0.0-SNAPSHOT"
+    implementation 'androidx.test:rules:1.1.1'
+    implementation 'androidx.test.ext:junit:1.1.1'
+}
+
+apply from: 'https://raw.githubusercontent.com/simonpoole/gradle-tasks/master/eclipse-android-3-lib'
+
+android.libraryVariants.all { variant ->
+    task("generate${variant.name.capitalize()}Javadoc", type: Javadoc) {
+        description "Generates Javadoc for $variant.name."
+        group "Documentation"
+        source = variant.javaCompile.source
+        doFirst {
+            classpath = files(variant.javaCompile.classpath.files) + files(android.bootClasspath) + files(variant.javaCompile.destinationDir)
+        }
+        options.links("http://docs.oracle.com/javase/7/docs/api/");
+        options.links("http://d.android.com/reference/");
+        exclude '**/BuildConfig.java'
+        exclude '**/R.java'
+    }
+}
+
+sonarqube {
+    // we've not converted to Java 8 source yet, so analyse as for 7/1.7
+    properties {
+        property "sonar.java.source","1.7"
+        property "sonar.sourceEncoding","UTF-8"
+        property "sonar.java.binaries", "build/intermediates/javac/debug/compileDebugJavaWithJavac/classes"
+        property "sonar.jacoco.reportPaths","build/jacoco/testDebugUnitTest.exec,\
+            build/outputs/code-coverage/connected/8.1(AVD) - 8.1.0-coverage.ec"
+    }
+}
+
+ext {
+    // hardwiring this is ugly but it does work
+    releaseSource = file('src/main/java/ch/poole/android/screenshotrule')
+    releaseJavadoc = file('build/docs/javadoc')
+}
+
+task sourcesJar(type: Jar) {
+    from releaseSource
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: 'generateReleaseJavadoc') {
+    classifier = 'javadoc'
+    from releaseJavadoc
+    //	options.encoding = 'UTF-8'
+}
+
+group "ch.poole.android"
+
+task replaceVersion {
+    doLast {
+        ant.replaceregexp(match:'ch\\.poole\\.android\\.screenshotrule\\:ScreenshotRule\\:([0-9\\.]+)', replace:"ch.poole.android.screenshotrule:ScreenshotRule:${version}", flags:'g', byline:true) {
+            fileset(dir: '..', includes: 'README.md')
+        }
+    }
+}
+build.dependsOn replaceVersion
+
+publishing {
+    publications {
+        openinghoursfragment(MavenPublication) {
+            groupId 'ch.poole.android'
+            artifactId 'ScreenshotRule'
+            artifact sourcesJar 
+            artifact javadocJar 
+			artifact("$buildDir/outputs/aar/ScreenshotRule-${project.version}.aar")
+			
+			//The publication doesn't know about our dependencies, so we have to manually add them to the pom
+			// see https://stackoverflow.com/questions/24743562/gradle-not-including-dependencies-in-published-pom-xml
+			pom.withXml {
+    			def dependenciesNode = asNode().appendNode('dependencies')
+
+    			//Iterate over the compile dependencies (we don't want the test ones), adding a <dependency> node for each
+    			configurations.implementation.allDependencies.each {
+        		def dependencyNode = dependenciesNode.appendNode('dependency')
+        			dependencyNode.appendNode('groupId', it.group)
+        			dependencyNode.appendNode('artifactId', it.name)
+        			dependencyNode.appendNode('version', it.version)
+    			}
+			}
+        }
+    }
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    publications = ['openinghoursfragment']
+    pkg {
+        repo = 'osm'
+        name = "${libName}"
+        licenses = ['BSD 3-Clause']
+        vcsUrl = 'https://github.com/simonpoole/OpeningHoursFragment.git'
+        version {
+        	name = "${project.version}"
+			released  = new Date()
+			gpg {
+				sign = true //Determines whether to GPG sign the files. The default is false
+				passphrase = System.getenv('BINTRAY_PASSPHRASE')
+			}
+        }
+    }
+}
