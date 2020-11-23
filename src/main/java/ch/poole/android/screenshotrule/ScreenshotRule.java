@@ -55,13 +55,24 @@ public class ScreenshotRule implements TestRule {
      * @return a File
      */
     public File screenshot(@NonNull Activity activity, @NonNull String tag) {
+        return saveScreenshot(activity, tag, Screenshot.capture(tag, activity));
+    }
+
+    /**
+     * Save a bitmap
+     * 
+     * @param activity the current Activity
+     * @param tag an identifying tag
+     * @param bitmap the bitmap to save
+     * @return a File
+     */
+    public File saveScreenshot(@NonNull Activity activity, @NonNull String tag, @NonNull Bitmap bitmap) {
         if (!TAG_VALIDATION.matcher(tag).matches()) {
             throw new IllegalArgumentException("Tag must match " + TAG_VALIDATION.pattern() + ".");
         }
         File screenshotDirectory = obtainDirectory(activity.getApplicationContext(), className, methodName, SPOON_SCREENSHOTS);
         String screenshotName = System.currentTimeMillis() + NAME_SEPARATOR + tag + EXTENSION;
         File screenshotFile = new File(screenshotDirectory, screenshotName);
-        Bitmap bitmap = Screenshot.capture(tag, activity);
         writeBitmapToFile(bitmap, screenshotFile);
         Log.d(TAG, "Captured screenshot '" + tag + "'.");
         return screenshotFile;
