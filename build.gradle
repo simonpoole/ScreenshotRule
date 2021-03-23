@@ -13,13 +13,13 @@ buildscript {
 }
 
 plugins {
-    id "com.jfrog.bintray" version "1.8.4"
     id "org.sonarqube" version "2.7"
 }
 
 apply plugin: 'eclipse'
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
+apply plugin: 'signing'
 apply plugin: "jacoco"
 
 
@@ -35,7 +35,7 @@ allprojects {
 }
 
 
-version = '0.1.0'
+version = '0.2.0'
 def libName = "ScreenshotRule"
 
 android {
@@ -131,15 +131,54 @@ task replaceVersion {
 }
 build.dependsOn replaceVersion
 
+ext {
+    repoUrl = 'https://github.com/simonpoole/ScreenshotRule.git'
+    spdxId = 'Apache-2.0'
+}
+
 publishing {
     publications {
-        screenshotrule(MavenPublication) {
+        Release(MavenPublication) {
             groupId 'ch.poole.android'
             artifactId 'ScreenshotRule'
             artifact sourcesJar 
             artifact javadocJar 
 			artifact("$buildDir/outputs/aar/ScreenshotRule-${project.version}.aar")
 			
+			pom {
+                name = artifactId
+                description = 'This is a simple parser for gettext .po files'    
+                url = 'https://github.com/simonpoole/PoParser'
+                scm {
+                    url = repoUrl
+                }
+                licenses {
+                    license {
+                        name = spdxId
+                        url = 'https://raw.githubusercontent.com/simonpoole/ScreenshotRule/master/LICENCE'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Square, Inc.'
+                    }
+                    developer {
+                        name = 'Simon Poole'
+                    }
+                }
+                repositories {
+                    maven {
+                        name = 'sonatype'
+                        credentials {
+                            username ossrhUsername
+                            password ossrhPassword
+                        }
+                        def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                        def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                        url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                    }
+                }
+            }
 			//The publication doesn't know about our dependencies, so we have to manually add them to the pom
 			// see https://stackoverflow.com/questions/24743562/gradle-not-including-dependencies-in-published-pom-xml
 			pom.withXml {
@@ -157,22 +196,7 @@ publishing {
     }
 }
 
-bintray {
-    user = System.getenv('BINTRAY_USER')
-    key = System.getenv('BINTRAY_KEY')
-    publications = ['screenshotrule']
-    pkg {
-        repo = 'android'
-        name = "${libName}"
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/simonpoole/ScreenshotRule.git'
-        version {
-        	name = "${project.version}"
-			released  = new Date()
-			gpg {
-				sign = true //Determines whether to GPG sign the files. The default is false
-				passphrase = System.getenv('BINTRAY_PASSPHRASE')
-			}
-        }
-    }
+
+signing {
+    sign publishing.publications.Release
 }

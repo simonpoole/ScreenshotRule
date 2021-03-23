@@ -32,8 +32,7 @@ Add the following to your *build.gradle* file(s):
 ``` groovy
 repositories {
     maven {
-        // jcenter() not published yet
-        maven { url 'https://dl.bintray.com/content/simonpoole/android' }
+        mavenCentral()
     }
 }
 ```
@@ -41,6 +40,6 @@ repositories {
 ``` groovy
 dependencies {
     androidTestImplementation "com.squareup.spoon:spoon-client:2.0.0-SNAPSHOT"
-    androidTestImplementation 'ch.poole.android:ScreenshotRule:0.1.0'
+    androidTestImplementation 'ch.poole.android:ScreenshotRule:0.2.0'
 }
 ```
