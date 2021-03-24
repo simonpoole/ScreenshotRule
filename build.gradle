@@ -35,7 +35,7 @@ allprojects {
 }
 
 
-version = '0.2.0'
+version = '0.2.1'
 def libName = "ScreenshotRule"
 
 android {
@@ -147,8 +147,8 @@ publishing {
 			
 			pom {
                 name = artifactId
-                description = 'This is a simple parser for gettext .po files'    
-                url = 'https://github.com/simonpoole/PoParser'
+                description = 'This is a JUnit tule for taking screenshots on Android devices/emulators'    
+                url = 'https://github.com/simonpoole/ScreenshotRule'
                 scm {
                     url = repoUrl
                 }
@@ -195,7 +195,6 @@ publishing {
         }
     }
 }
-
 
 signing {
     sign publishing.publications.Release
